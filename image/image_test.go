@@ -56,6 +56,34 @@ func TestMarshalKeyOrder(t *testing.T) {
 	}
 }
 
+const sampleHistoryJSON = `{
+	"created": "2021-01-13T09:35:56Z",
+	"created_by": "image_test.go"
+}`
+
+func TestHistoryEqual(t *testing.T) {
+	h := historyFromJSON(t, sampleHistoryJSON)
+	hCopy := h
+	assert.Check(t, h.Equal(hCopy))
+
+	hUTC := historyFromJSON(t, `{"created": "2021-01-13T14:00:00Z"}`)
+	hOffset0 := historyFromJSON(t, `{"created": "2021-01-13T14:00:00+00:00"}`)
+	assert.Check(t, hUTC.Created != hOffset0.Created)
+	assert.Check(t, hUTC.Equal(hOffset0))
+
+	hOffset2 := historyFromJSON(t, `{"created": "2021-01-13T16:00:00+02:00"}`)
+	assert.Check(t, hOffset0.Created != hOffset2.Created)
+	assert.Check(t, hOffset0.Created.Equal(hOffset2.Created))
+	assert.Check(t, !hOffset0.Equal(hOffset2))
+}
+
+func historyFromJSON(t *testing.T, historyJSON string) History {
+	var h History
+	err := json.Unmarshal([]byte(historyJSON), &h)
+	assert.Check(t, err)
+	return h
+}
+
 func TestImage(t *testing.T) {
 	cid := "50a16564e727"
 	config := &container.Config{

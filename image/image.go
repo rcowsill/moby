@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"reflect"
 	"runtime"
 	"strings"
 	"time"
@@ -215,6 +216,30 @@ func NewHistory(author, comment, createdBy string, isEmptyLayer bool) History {
 		CreatedBy:  createdBy,
 		Comment:    comment,
 		EmptyLayer: isEmptyLayer,
+	}
+}
+
+// Equal compares two history structs for equality
+func (h History) Equal(i History) bool {
+	h.normalize()
+	i.normalize()
+
+	return reflect.DeepEqual(h, i)
+}
+
+// Normalize converts a history struct to a standard form for comparison
+func (h *History) normalize() {
+	if h == nil {
+		return
+	}
+
+	// Times with +00:00 offset from UTC are represented differently to
+	// UTC times in memory, but t.MarshalJSON outputs them as UTC.
+	// Convert such times to UTC for comparison
+	if h.Created.Location() != time.UTC {
+		if _, offset := h.Created.Zone(); offset == 0 {
+			h.Created = h.Created.UTC()
+		}
 	}
 }
 
